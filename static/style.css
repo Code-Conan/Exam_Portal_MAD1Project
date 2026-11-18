@@ -1,0 +1,22 @@
+/* small custom styles on top of bootstrap */
+body { background: #f4f6f9; }
+
+.nav-link-top {
+    color: #ddd;
+    text-decoration: none;
+    margin-right: 12px;
+}
+.nav-link-top:hover { color: #fff; }
+
+.stat-box {
+    background: white;
+    border-radius: 8px;
+    padding: 18px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.stat-box h3 { margin: 0; }
+
+.auth-card { max-width: 420px; margin: 40px auto; }
+
+table form { display: inline; }

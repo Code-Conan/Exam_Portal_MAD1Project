@@ -1,0 +1,14 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3>Change Examiner</h3>
+<p>Slot #{{ slot.id }} - {{ slot.exam.name }} on {{ slot.date }} ({{ slot.start_time }} - {{ slot.end_time }})<br>
+Current examiner: <b>{{ slot.examiner.name }}</b></p>
+<form method="POST" class="d-flex gap-2" style="max-width:400px">
+    <select name="examiner_id" class="form-select">
+        {% for ex in examiners %}
+        <option value="{{ ex.id }}" {% if ex.id == slot.examiner_id %}selected{% endif %}>{{ ex.name }}</option>
+        {% endfor %}
+    </select>
+    <button class="btn btn-primary">Change</button>
+</form>
+{% endblock %}

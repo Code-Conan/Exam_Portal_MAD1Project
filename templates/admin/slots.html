@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3 class="mb-3">All Examination Slots</h3>
+<table class="table table-bordered bg-white">
+    <tr><th>ID</th><th>Exam</th><th>Examiner</th><th>Date</th><th>Time</th><th>Seats Left</th><th>Status</th><th></th></tr>
+    {% for s in slots %}
+    <tr>
+        <td>{{ s.id }}</td><td>{{ s.exam.name }}</td><td>{{ s.examiner.name }}</td><td>{{ s.date }}</td>
+        <td>{{ s.start_time }} - {{ s.end_time }}</td><td>{{ s.available_seats }}/{{ s.capacity }}</td><td>{{ s.status }}</td>
+        <td><a href="{{ url_for('admin_change_examiner', slot_id=s.id) }}" class="btn btn-sm btn-outline-primary">Change Examiner</a></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="8" class="text-muted">No slots yet.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

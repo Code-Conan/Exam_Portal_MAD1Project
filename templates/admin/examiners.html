@@ -1,0 +1,25 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+    <h3>Examiners</h3>
+    <a href="{{ url_for('admin_add_examiner') }}" class="btn btn-primary">+ Add Examiner</a>
+</div>
+<table class="table table-bordered bg-white">
+    <tr><th>ID</th><th>Name</th><th>Email</th><th>Phone</th><th>Department</th><th>Approved</th><th>Active</th><th></th></tr>
+    {% for u in examiners %}
+    <tr>
+        <td>{{ u.id }}</td><td>{{ u.name }}</td><td>{{ u.email }}</td><td>{{ u.phone }}</td><td>{{ u.department }}</td>
+        <td>{{ 'Yes' if u.is_approved else 'No' }}</td>
+        <td>{{ 'Yes' if u.is_active else 'No' }}</td>
+        <td>
+            {% if not u.is_approved %}
+            <form method="POST" action="{{ url_for('admin_approve', user_id=u.id) }}"><button class="btn btn-sm btn-success">Approve</button></form>
+            {% endif %}
+            <form method="POST" action="{{ url_for('admin_toggle_active', user_id=u.id) }}">
+                <button class="btn btn-sm btn-outline-{{ 'danger' if u.is_active else 'success' }}">{{ 'Deactivate' if u.is_active else 'Activate' }}</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% endblock %}

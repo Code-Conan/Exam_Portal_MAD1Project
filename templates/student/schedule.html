@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3>My Exam Schedule</h3>
+<table class="table table-bordered bg-white">
+    <tr><th>Date</th><th>Time</th><th>Exam</th><th>Type</th><th>Examiner</th></tr>
+    {% for b in bookings %}
+    <tr><td>{{ b.slot.date }}</td><td>{{ b.slot.start_time }} - {{ b.slot.end_time }}</td>
+        <td>{{ b.exam.name }}</td><td>{{ b.exam.exam_type }}</td><td>{{ b.slot.examiner.name }}</td></tr>
+    {% else %}
+    <tr><td colspan="5" class="text-muted">No exams scheduled.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

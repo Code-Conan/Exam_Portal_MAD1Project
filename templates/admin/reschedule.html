@@ -1,0 +1,18 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3>Reschedule Booking #{{ b.id }}</h3>
+<p>{{ b.student.name }} - {{ b.exam.name }}<br>
+Current slot: {{ b.slot.date }} {{ b.slot.start_time }} - {{ b.slot.end_time }} ({{ b.slot.examiner.name }})</p>
+{% if options %}
+<form method="POST" class="d-flex gap-2" style="max-width:500px">
+    <select name="slot_id" class="form-select">
+        {% for s in options %}
+        <option value="{{ s.id }}">{{ s.date }} {{ s.start_time }}-{{ s.end_time }} | {{ s.examiner.name }} | {{ s.available_seats }} left</option>
+        {% endfor %}
+    </select>
+    <button class="btn btn-primary">Move</button>
+</form>
+{% else %}
+<p class="text-muted">No other slots with free seats for this exam.</p>
+{% endif %}
+{% endblock %}

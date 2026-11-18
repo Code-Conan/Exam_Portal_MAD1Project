@@ -1,0 +1,45 @@
+{% extends 'base.html' %}
+{% block title %}Student Dashboard{% endblock %}
+{% block content %}
+<h3 class="mb-4">Hi {{ session.name }}</h3>
+
+<div class="row g-3 mb-4">
+    <div class="col-md-3 col-6"><div class="stat-box"><h3>{{ open_exams|length }}</h3><small class="text-muted">Exams Open for Booking</small></div></div>
+    <div class="col-md-3 col-6"><div class="stat-box"><h3>{{ open_slots|length }}</h3><small class="text-muted">Available Slots</small></div></div>
+    <div class="col-md-3 col-6"><div class="stat-box"><h3>{{ active|length }}</h3><small class="text-muted">Booked Slots</small></div></div>
+    <div class="col-md-3 col-6"><div class="stat-box"><h3>{{ results|length }}</h3><small class="text-muted">Results Published</small></div></div>
+</div>
+
+<h5>Available Examinations</h5>
+<ul class="list-group mb-4">
+    {% for e in open_exams %}
+    <li class="list-group-item d-flex justify-content-between">
+        <span>{{ e.name }} ({{ e.course.code }}) - book before {{ e.booking_end }}</span>
+        <a href="{{ url_for('student_exam_detail', exam_id=e.id) }}">View slots</a>
+    </li>
+    {% else %}
+    <li class="list-group-item text-muted">No exam open for booking right now.</li>
+    {% endfor %}
+</ul>
+
+<h5>Upcoming Examinations</h5>
+<table class="table table-bordered bg-white">
+    <tr><th>Exam</th><th>Date</th><th>Time</th><th>Examiner</th></tr>
+    {% for b in upcoming %}
+    <tr><td>{{ b.exam.name }}</td><td>{{ b.slot.date }}</td><td>{{ b.slot.start_time }} - {{ b.slot.end_time }}</td><td>{{ b.slot.examiner.name }}</td></tr>
+    {% else %}
+    <tr><td colspan="4" class="text-muted">Nothing upcoming.</td></tr>
+    {% endfor %}
+</table>
+
+<h5>Published Results</h5>
+<table class="table table-bordered bg-white">
+    <tr><th>Exam</th><th>Marks</th><th></th></tr>
+    {% for b in results %}
+    <tr><td>{{ b.exam.name }}</td><td>{{ b.evaluation.total_marks }} / {{ b.exam.max_marks }}</td>
+        <td><a href="{{ url_for('student_result', booking_id=b.id) }}">Details</a></td></tr>
+    {% else %}
+    <tr><td colspan="3" class="text-muted">No results yet.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

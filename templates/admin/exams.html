@@ -1,0 +1,20 @@
+{% extends 'base.html' %}
+{% block content %}
+<div class="d-flex justify-content-between mb-3">
+    <h3>Examinations</h3>
+    <a href="{{ url_for('admin_exam_form') }}" class="btn btn-primary">+ New Exam</a>
+</div>
+<table class="table table-bordered bg-white">
+    <tr><th>ID</th><th>Name</th><th>Course</th><th>Type</th><th>Max Marks</th><th>Booking Window</th><th>Status</th><th></th></tr>
+    {% for e in exams %}
+    <tr>
+        <td>{{ e.id }}</td><td>{{ e.name }}</td><td>{{ e.course.code }}</td><td>{{ e.exam_type }}</td>
+        <td>{{ e.max_marks }}</td><td>{{ e.booking_start }} to {{ e.booking_end }}</td>
+        <td><span class="badge bg-secondary">{{ e.status }}</span></td>
+        <td><a href="{{ url_for('admin_exam_detail', exam_id=e.id) }}" class="btn btn-sm btn-outline-primary">Manage</a></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="8" class="text-muted">No exams yet.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,37 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3>Examinations</h3>
+<form class="row g-2 mb-3">
+    <div class="col-md-4"><input name="q" value="{{ q }}" class="form-control" placeholder="Search exam / course"></div>
+    <div class="col-md-3">
+        <select name="type" class="form-select">
+            <option value="">All types</option>
+            {% for t in ['Viva', 'Practical', 'Project Demo', 'Assessment'] %}
+            <option {% if exam_type == t %}selected{% endif %}>{{ t }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-3">
+        <select name="course" class="form-select">
+            <option value="">All courses</option>
+            {% for c in courses %}
+            <option value="{{ c.id }}" {% if course_id == c.id|string %}selected{% endif %}>{{ c.code }}</option>
+            {% endfor %}
+        </select>
+    </div>
+    <div class="col-md-2"><button class="btn btn-primary w-100">Filter</button></div>
+</form>
+
+<table class="table table-bordered bg-white">
+    <tr><th>Exam</th><th>Course</th><th>Type</th><th>Duration</th><th>Booking Window</th><th>Status</th><th></th></tr>
+    {% for e in exams %}
+    <tr>
+        <td>{{ e.name }}</td><td>{{ e.course.code }}</td><td>{{ e.exam_type }}</td><td>{{ e.duration }} mins</td>
+        <td>{{ e.booking_start }} to {{ e.booking_end }}</td><td>{{ e.status }}</td>
+        <td><a href="{{ url_for('student_exam_detail', exam_id=e.id) }}" class="btn btn-sm btn-outline-primary">View</a></td>
+    </tr>
+    {% else %}
+    <tr><td colspan="7" class="text-muted">No exams found.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3>Result - {{ b.exam.name }}</h3>
+<p>Evaluated by {{ b.slot.examiner.name }} on {{ b.evaluation.evaluated_on.strftime('%d-%m-%Y') }}</p>
+<table class="table table-bordered bg-white" style="max-width:600px">
+    <tr><th>Criterion</th><th>Marks</th><th>Out of</th></tr>
+    {% for s in b.evaluation.scores %}
+    <tr><td>{{ s.rubric.criterion }}</td><td>{{ s.marks }}</td><td>{{ s.rubric.max_marks }}</td></tr>
+    {% endfor %}
+    <tr class="table-light"><th>Total</th><th>{{ b.evaluation.total_marks }}</th><th>{{ b.exam.max_marks }}</th></tr>
+</table>
+<p><b>Remarks:</b> {{ b.evaluation.remarks or '-' }}</p>
+{% endblock %}

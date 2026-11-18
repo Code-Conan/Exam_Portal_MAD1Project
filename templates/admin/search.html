@@ -1,0 +1,32 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3>Search</h3>
+<form class="d-flex gap-2 mb-4" style="max-width:500px">
+    <input name="q" value="{{ q }}" class="form-control" placeholder="Name or ID">
+    <button class="btn btn-primary">Search</button>
+</form>
+
+{% if q %}
+<h5>Students</h5>
+<ul>
+    {% for s in results.students %}
+    <li><a href="{{ url_for('admin_student_detail', student_id=s.id) }}">#{{ s.id }} {{ s.name }}</a> ({{ s.email }})</li>
+    {% else %}<li class="text-muted">none</li>{% endfor %}
+</ul>
+<h5>Examiners</h5>
+<ul>
+    {% for e in results.examiners %}
+    <li>#{{ e.id }} {{ e.name }} ({{ e.email }}) - {{ e.department }}</li>
+    {% else %}<li class="text-muted">none</li>{% endfor %}
+</ul>
+<h5>Examinations</h5>
+<ul>
+    {% for e in results.exams %}
+    <li><a href="{{ url_for('admin_exam_detail', exam_id=e.id) }}">#{{ e.id }} {{ e.name }}</a> - {{ e.status }}</li>
+    {% else %}<li class="text-muted">none</li>{% endfor %}
+</ul>
+<h5>Bookings</h5>
+{% set bookings = results.bookings %}
+{% include 'admin/_booking_table.html' %}
+{% endif %}
+{% endblock %}

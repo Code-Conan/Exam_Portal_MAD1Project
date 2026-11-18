@@ -1,0 +1,15 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3>My Profile</h3>
+<form method="POST" class="card card-body" style="max-width:450px">
+    <label class="form-label">Name</label>
+    <input name="name" class="form-control mb-2" value="{{ me.name }}" required>
+    <label class="form-label">Email</label>
+    <input class="form-control mb-2" value="{{ me.email }}" disabled>
+    <label class="form-label">Roll No</label>
+    <input name="roll_no" class="form-control mb-2" value="{{ me.roll_no or '' }}">
+    <label class="form-label">Phone</label>
+    <input name="phone" class="form-control mb-3" value="{{ me.phone or '' }}">
+    <button class="btn btn-primary">Update</button>
+</form>
+{% endblock %}

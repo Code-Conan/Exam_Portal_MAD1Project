@@ -1,0 +1,56 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3>{{ 'Edit' if exam else 'New' }} Examination</h3>
+{% if not courses %}
+<div class="alert alert-warning">Create an active course first.</div>
+{% endif %}
+<form method="POST" class="card card-body" style="max-width:700px">
+    <div class="row g-2">
+        <div class="col-md-6">
+            <label class="form-label">Course</label>
+            <select name="course_id" class="form-select" required>
+                {% for c in courses %}
+                <option value="{{ c.id }}" {% if exam and exam.course_id == c.id %}selected{% endif %}>{{ c.code }} - {{ c.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Exam Name</label>
+            <input name="name" class="form-control" value="{{ exam.name if exam }}" required>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Type</label>
+            <select name="exam_type" class="form-select">
+                {% for t in types %}
+                <option {% if exam and exam.exam_type == t %}selected{% endif %}>{{ t }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Duration (mins)</label>
+            <input type="number" min="1" name="duration" class="form-control" value="{{ exam.duration if exam }}" required>
+        </div>
+        <div class="col-md-4">
+            <label class="form-label">Max Marks</label>
+            <input type="number" min="1" name="max_marks" class="form-control" value="{{ exam.max_marks if exam }}" required>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Slot Creation Start</label>
+            <input type="date" name="slot_start" class="form-control" value="{{ exam.slot_start if exam }}" required>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Slot Creation End</label>
+            <input type="date" name="slot_end" class="form-control" value="{{ exam.slot_end if exam }}" required>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Booking Start</label>
+            <input type="date" name="booking_start" class="form-control" value="{{ exam.booking_start if exam }}" required>
+        </div>
+        <div class="col-md-6">
+            <label class="form-label">Booking End</label>
+            <input type="date" name="booking_end" class="form-control" value="{{ exam.booking_end if exam }}" required>
+        </div>
+    </div>
+    <button class="btn btn-primary mt-3">Save</button>
+</form>
+{% endblock %}

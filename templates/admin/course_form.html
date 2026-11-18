@@ -1,0 +1,19 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3>{{ 'Edit' if course else 'New' }} Course</h3>
+<form method="POST" class="card card-body" style="max-width:600px">
+    <label class="form-label">Course Code</label>
+    <input name="code" class="form-control mb-2" value="{{ course.code if course }}" required>
+    <label class="form-label">Course Name</label>
+    <input name="name" class="form-control mb-2" value="{{ course.name if course }}" required>
+    <label class="form-label">Description</label>
+    <textarea name="description" class="form-control mb-2">{{ course.description if course }}</textarea>
+    <label class="form-label">Status</label>
+    <select name="status" class="form-select mb-3">
+        {% for s in ['Active', 'Inactive'] %}
+        <option {% if course and course.status == s %}selected{% endif %}>{{ s }}</option>
+        {% endfor %}
+    </select>
+    <button class="btn btn-primary">Save</button>
+</form>
+{% endblock %}

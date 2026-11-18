@@ -1,0 +1,31 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3>{{ exam.name }}</h3>
+<p>{{ exam.course.code }} - {{ exam.course.name }} | {{ exam.exam_type }} | {{ exam.duration }} mins | Max marks {{ exam.max_marks }}</p>
+<p>Booking: {{ exam.booking_start }} to {{ exam.booking_end }} | Status: <b>{{ exam.status }}</b></p>
+
+{% if existing %}
+<div class="alert alert-info">You have booked a slot for this exam on {{ existing.slot.date }} at {{ existing.slot.start_time }}.</div>
+{% endif %}
+
+<table class="table table-bordered bg-white">
+    <tr><th>Date</th><th>Time</th><th>Examiner</th><th>Seats Left</th><th></th></tr>
+    {% for s in slots %}
+    <tr>
+        <td>{{ s.date }}</td><td>{{ s.start_time }} - {{ s.end_time }}</td><td>{{ s.examiner.name }}</td>
+        <td>{{ s.available_seats }}/{{ s.capacity }}</td>
+        <td>
+            {% if s.status == 'Full' %}
+                <span class="badge bg-danger">Full</span>
+            {% elif exam.booking_allowed() and not existing %}
+                <form method="POST" action="{{ url_for('student_book', slot_id=s.id) }}">
+                    <button class="btn btn-sm btn-success">Book</button>
+                </form>
+            {% endif %}
+        </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="text-muted">No slots available.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}

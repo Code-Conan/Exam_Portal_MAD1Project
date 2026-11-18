@@ -1,0 +1,36 @@
+{% extends 'base.html' %}
+{% block title %}Admin Dashboard{% endblock %}
+{% block content %}
+<h3 class="mb-4">Admin Dashboard</h3>
+
+<div class="row g-3 mb-4">
+    {% for label, key in [('Courses','courses'), ('Examinations','exams'), ('Examiners','examiners'),
+                          ('Students','students'), ('Slots','slots'), ('Bookings','bookings')] %}
+    <div class="col-md-2 col-6">
+        <div class="stat-box">
+            <h3>{{ counts[key] }}</h3>
+            <small class="text-muted">{{ label }}</small>
+        </div>
+    </div>
+    {% endfor %}
+</div>
+
+<h5>Pending Examiner Approvals</h5>
+{% if pending %}
+<table class="table table-bordered bg-white">
+    <tr><th>ID</th><th>Name</th><th>Email</th><th>Department</th><th></th></tr>
+    {% for u in pending %}
+    <tr>
+        <td>{{ u.id }}</td><td>{{ u.name }}</td><td>{{ u.email }}</td><td>{{ u.department }}</td>
+        <td>
+            <form method="POST" action="{{ url_for('admin_approve', user_id=u.id) }}">
+                <button class="btn btn-sm btn-success">Approve</button>
+            </form>
+        </td>
+    </tr>
+    {% endfor %}
+</table>
+{% else %}
+<p class="text-muted">No pending requests.</p>
+{% endif %}
+{% endblock %}

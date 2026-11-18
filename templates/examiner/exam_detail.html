@@ -1,0 +1,33 @@
+{% extends 'base.html' %}
+{% block content %}
+<h3>{{ exam.name }} <small class="text-muted">({{ exam.course.code }})</small></h3>
+<p>Status: <b>{{ exam.status }}</b> | Slot creation: {{ exam.slot_start }} to {{ exam.slot_end }} | Booking: {{ exam.booking_start }} to {{ exam.booking_end }}</p>
+
+{% if exam.slot_creation_allowed() %}
+<a href="{{ url_for('examiner_create_slot', exam_id=exam.id) }}" class="btn btn-primary mb-3">+ Create Slot</a>
+{% else %}
+<div class="alert alert-secondary">Slot creation is closed for this exam.</div>
+{% endif %}
+
+<h5>My Slots</h5>
+<table class="table table-bordered bg-white">
+    <tr><th>Date</th><th>Time</th><th>Seats Left</th><th>Status</th><th></th></tr>
+    {% for s in slots %}
+    <tr>
+        <td>{{ s.date }}</td><td>{{ s.start_time }} - {{ s.end_time }}</td>
+        <td>{{ s.available_seats }}/{{ s.capacity }}</td><td>{{ s.status }}</td>
+        <td>
+            <a href="{{ url_for('examiner_slot_students', slot_id=s.id) }}" class="btn btn-sm btn-outline-primary">Students</a>
+            {% if exam.status in ['Draft', 'Slot Creation'] %}
+            <a href="{{ url_for('examiner_edit_slot', slot_id=s.id) }}" class="btn btn-sm btn-outline-secondary">Edit</a>
+            <form method="POST" action="{{ url_for('examiner_delete_slot', slot_id=s.id) }}">
+                <button class="btn btn-sm btn-outline-danger">Remove</button>
+            </form>
+            {% endif %}
+        </td>
+    </tr>
+    {% else %}
+    <tr><td colspan="5" class="text-muted">No slots created.</td></tr>
+    {% endfor %}
+</table>
+{% endblock %}
