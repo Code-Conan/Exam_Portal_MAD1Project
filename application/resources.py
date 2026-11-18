@@ -1,6 +1,7 @@
-# resources.py - JSON API for examinations, examiners, students and bookings
-# only a logged in admin can use these (the session cookie is checked)
-# can be tested from the browser after admin login, or with Postman / Thunder Client
+# JSON API
+# API resources for examinations, examiners, students and bookings
+# Only a logged in admin can access these routes
+# Can be tested in the browser after admin login, or with Postman
 
 from datetime import datetime
 from flask import current_app as app, request, jsonify, session
@@ -9,12 +10,15 @@ from .database import db
 from .models import User, Course, Exam, Booking
 
 
+# Access Check
+
 def not_admin():
-    # every api route calls this first
+    # Called first by every API route
     return session.get('role') != 'admin'
 
 
-# small functions that turn a db row into a dict for jsonify
+# Helpers
+# Convert database rows into dictionaries for jsonify
 
 def exam_to_dict(e):
     return {
@@ -49,7 +53,7 @@ def booking_to_dict(b):
     }
 
 
-# ---------------- examinations ----------------
+# Examinations
 
 @app.get('/api/exams')
 def api_get_exams():
@@ -69,7 +73,7 @@ def api_get_exam(exam_id):
 
 
 def fill_exam(e, data):
-    # copies values from json into the exam object (used by post and put)
+    # Copies JSON values into the exam object, used by POST and PUT
     e.course_id = int(data['course_id'])
     e.name = data['name']
     e.exam_type = data.get('exam_type', 'Viva')
@@ -128,7 +132,7 @@ def api_delete_exam(exam_id):
     e = db.session.get(Exam, exam_id)
     if not e:
         return jsonify(error='Exam not found'), 404
-    # same rule as the web page, exams with bookings are kept for history
+    # Exams with bookings are kept for history, same rule as the web page
     if Booking.query.filter_by(exam_id=e.id).first():
         return jsonify(error='Exam has bookings, cannot delete'), 400
     db.session.delete(e)
@@ -136,7 +140,7 @@ def api_delete_exam(exam_id):
     return jsonify(message='Exam deleted'), 200
 
 
-# ---------------- examiners & students ----------------
+# Examiners and Students
 
 @app.get('/api/examiners')
 def api_get_examiners():
@@ -176,14 +180,14 @@ def api_get_student(user_id):
     return jsonify(d), 200
 
 
-# ---------------- bookings ----------------
+# Bookings
 
 @app.get('/api/bookings')
 def api_get_bookings():
     if not_admin():
         return jsonify(error='Unauthorized'), 401
     query = Booking.query
-    # optional filters: /api/bookings?exam_id=1&status=Booked
+    # Optional filters by exam_id and status in the query string
     if request.args.get('exam_id'):
         query = query.filter_by(exam_id=int(request.args['exam_id']))
     if request.args.get('status'):

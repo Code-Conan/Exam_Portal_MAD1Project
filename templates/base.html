@@ -1,3 +1,4 @@
+{# Base layout shared by all pages #}
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -13,7 +14,7 @@
     <span class="navbar-brand">EMP</span>
     {% if session.role %}
     <div>
-        {# links change depending on who is logged in #}
+        {# Navigation links depend on the logged in role #}
         {% if session.role == 'admin' %}
             <a class="nav-link-top" href="{{ url_for('admin_dashboard') }}">Dashboard</a>
             <a class="nav-link-top" href="{{ url_for('admin_courses') }}">Courses</a>

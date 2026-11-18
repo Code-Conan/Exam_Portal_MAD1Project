@@ -1,3 +1,4 @@
+{# Admin: Exam detail page #}
 {% extends 'base.html' %}
 {% block content %}
 <div class="d-flex justify-content-between">
@@ -15,7 +16,7 @@
     <p class="mb-1"><b>Slot creation:</b> {{ exam.slot_start }} to {{ exam.slot_end }}</p>
     <p class="mb-3"><b>Booking:</b> {{ exam.booking_start }} to {{ exam.booking_end }}</p>
 
-    {# status change = open/close slot creation and booking #}
+    {# Status change opens and closes slot creation and booking #}
     <form method="POST" action="{{ url_for('admin_change_status', exam_id=exam.id) }}" class="d-flex gap-2" style="max-width:400px">
         <select name="status" class="form-select">
             {% for s in statuses %}

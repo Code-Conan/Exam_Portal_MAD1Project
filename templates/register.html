@@ -1,3 +1,4 @@
+{# Register page #}
 {% extends 'base.html' %}
 {% block title %}Register{% endblock %}
 {% block content %}
@@ -28,7 +29,7 @@
                 <label class="form-label">Phone</label>
                 <input name="phone" class="form-control">
             </div>
-            <!-- no JS so both fields are shown, only the relevant one is saved -->
+            <!-- Both fields are shown since JavaScript is not used, only the relevant one is saved -->
             <div class="mb-2">
                 <label class="form-label">Roll No <small class="text-muted">(students)</small></label>
                 <input name="roll_no" class="form-control">

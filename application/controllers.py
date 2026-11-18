@@ -1,16 +1,16 @@
-# controllers.py - all the routes (pages) of the app
-# sections: auth, admin, examiner, student
+# Controllers
+# All web routes of the portal: Auth, Admin, Examiner and Student
 
 import os
 from datetime import datetime
 from functools import wraps
 
-# matplotlib for the summary charts. 'Agg' lets it draw without opening a window
+# Matplotlib for the summary charts. The Agg backend draws without opening a window
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
-from flask import current_app as app   # the app object made in app.py
+from flask import current_app as app   # App object created in app.py
 from flask import render_template, request, redirect, url_for, flash, session
 from werkzeug.security import generate_password_hash, check_password_hash
 
@@ -21,11 +21,11 @@ EXAM_TYPES = ['Viva', 'Practical', 'Project Demo', 'Assessment']
 EXAM_STATUSES = ['Draft', 'Slot Creation', 'Booking Open', 'Closed', 'Completed']
 
 
-# ---------- helpers ----------
+# Helpers
 
 def login_required(role):
-    # decorator: page opens only if someone is logged in with this role
-    # otherwise they are sent back to login
+    # Decorator that opens a page only for a logged in user with the given role
+    # Other users are redirected to the login page
     def decorator(f):
         @wraps(f)
         def wrapper(*args, **kwargs):
@@ -43,22 +43,22 @@ def current_user():
 
 
 def to_date(value):
-    # html date input gives 'YYYY-MM-DD'
+    # HTML date inputs send dates in year, month, day format
     return datetime.strptime(value, '%Y-%m-%d').date()
 
 
-# =====================================================
-#                     AUTH
-# =====================================================
+# Home
 
 @app.route('/')
 def home():
-    # logged in users go to their own dashboard
+    # Logged in users are sent to their own dashboard
     role = session.get('role')
     if role:
         return redirect(url_for(role + '_dashboard'))
     return redirect(url_for('login'))
 
+
+# Login, Register and Logout
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -75,12 +75,12 @@ def login():
             flash('Your account has been deactivated. Contact admin.', 'danger')
             return redirect(url_for('login'))
 
-        # examiner can't login until admin approves
+        # Examiners cannot log in until the admin approves them
         if user.role == 'examiner' and not user.is_approved:
             flash('Your account is waiting for admin approval', 'warning')
             return redirect(url_for('login'))
 
-        # user id is kept in session, not in the url
+        # User ID is kept in the session, not in the URL
         session['user_id'] = user.id
         session['role'] = user.role
         session['name'] = user.name
@@ -98,7 +98,7 @@ def register():
         password = request.form.get('password', '')
         phone = request.form.get('phone', '').strip()
 
-        # only student and examiner can register, admin already exists
+        # Only students and examiners can register, the admin already exists
         if role not in ('student', 'examiner'):
             flash('Invalid role', 'danger')
             return redirect(url_for('register'))
@@ -111,7 +111,7 @@ def register():
             flash('Email already registered', 'danger')
             return redirect(url_for('register'))
 
-        # password is stored as a hash, never plain text
+        # Passwords are stored as hashes, never as plain text
         user = User(name=name, email=email, phone=phone, role=role,
                     password=generate_password_hash(password))
         if role == 'student':
@@ -140,9 +140,7 @@ def logout():
     return redirect(url_for('login'))
 
 
-# =====================================================
-#                     ADMIN
-# =====================================================
+# Admin Dashboard
 
 @app.route('/admin/dashboard')
 @login_required('admin')
@@ -159,7 +157,7 @@ def admin_dashboard():
     return render_template('admin/dashboard.html', counts=counts, pending=pending)
 
 
-# ---------- courses ----------
+# Admin Courses
 
 @app.route('/admin/courses')
 @login_required('admin')
@@ -171,12 +169,12 @@ def admin_courses():
 @app.route('/admin/course/<int:course_id>/edit', methods=['GET', 'POST'])
 @login_required('admin')
 def admin_course_form(course_id=None):
-    # same function for add and edit
+    # Same function handles both add and edit
     course = db.session.get(Course, course_id) if course_id else None
 
     if request.method == 'POST':
         code = request.form['code'].strip()
-        # course code should be unique
+        # Course code must be unique
         other = Course.query.filter_by(code=code).first()
         if other and (course is None or other.id != course.id):
             flash('Course code already exists', 'danger')
@@ -200,7 +198,7 @@ def admin_course_form(course_id=None):
 @login_required('admin')
 def admin_delete_course(course_id):
     course = db.session.get(Course, course_id)
-    # if any exam of this course has bookings, deleting would lose history
+    # Courses whose exams have bookings are kept to preserve history
     for exam in course.exams:
         if Booking.query.filter_by(exam_id=exam.id).first():
             flash('Cannot delete, this course has exams with bookings. Mark it Inactive instead.', 'danger')
@@ -211,7 +209,7 @@ def admin_delete_course(course_id):
     return redirect(url_for('admin_courses'))
 
 
-# ---------- exams ----------
+# Admin Exams
 
 @app.route('/admin/exams')
 @login_required('admin')
@@ -236,7 +234,7 @@ def admin_exam_form(exam_id=None):
             flash('Please enter all dates', 'danger')
             return redirect(request.url)
 
-        # checking the timeline makes sense
+        # Validates that the exam timeline makes sense
         if slot_start > slot_end or booking_start > booking_end:
             flash('Start date must be before end date', 'danger')
             return redirect(request.url)
@@ -253,7 +251,7 @@ def admin_exam_form(exam_id=None):
         if duration < 1 or max_marks < 1:
             flash('Duration and max marks must be at least 1', 'danger')
             return redirect(request.url)
-        # max marks can't go below what the rubrics already add up to
+        # Max marks cannot be lower than the total of existing rubric marks
         if exam and max_marks < sum(r.max_marks for r in exam.rubrics):
             flash('Max marks cannot be less than total rubric marks', 'danger')
             return redirect(request.url)
@@ -299,15 +297,17 @@ def admin_delete_exam(exam_id):
     return redirect(url_for('admin_exams'))
 
 
+# Admin Exam Status and Examiner Assignment
+
 @app.route('/admin/exam/<int:exam_id>/status', methods=['POST'])
 @login_required('admin')
 def admin_change_status(exam_id):
-    # admin opens / closes slot creation and booking by changing the status
+    # Admin opens and closes slot creation and booking by changing the status
     exam = db.session.get(Exam, exam_id)
     new_status = request.form['status']
     if new_status in EXAM_STATUSES:
         exam.status = new_status
-        # when exam is completed, its slots and bookings are completed too
+        # Completing an exam also completes its slots and bookings
         if new_status == 'Completed':
             for slot in exam.slots:
                 if slot.status != 'Cancelled':
@@ -337,7 +337,7 @@ def admin_assign_examiner(exam_id):
 def admin_unassign_examiner(exam_id, examiner_id):
     exam = db.session.get(Exam, exam_id)
     examiner = db.session.get(User, examiner_id)
-    # if examiner has slots here, admin has to change the slot examiner first
+    # Examiners with slots in this exam must be replaced on those slots first
     if Slot.query.filter_by(exam_id=exam.id, examiner_id=examiner_id).first():
         flash('This examiner has slots in this exam. Change the slot examiner first.', 'danger')
     else:
@@ -347,10 +347,10 @@ def admin_unassign_examiner(exam_id, examiner_id):
     return redirect(url_for('admin_exam_detail', exam_id=exam.id))
 
 
-# ---------- rubrics ----------
+# Admin Rubrics
 
 def read_rubric_numbers():
-    # returns (max_marks, weightage, error) from the rubric form
+    # Returns (max_marks, weightage, error) from the rubric form
     try:
         max_marks = int(request.form['max_marks'])
         weightage = int(request.form.get('weightage') or 0)
@@ -371,7 +371,7 @@ def admin_add_rubric(exam_id):
     if error:
         flash(error, 'danger')
         return redirect(url_for('admin_exam_detail', exam_id=exam.id))
-    # sum of rubric marks can't go above exam max marks
+    # Total rubric marks cannot exceed the exam max marks
     used = sum(r.max_marks for r in exam.rubrics)
     if used + max_marks > exam.max_marks:
         flash('Total rubric marks cannot exceed exam max marks (%d)' % exam.max_marks, 'danger')
@@ -423,7 +423,7 @@ def admin_delete_rubric(rubric_id):
     return redirect(url_for('admin_exam_detail', exam_id=exam_id))
 
 
-# ---------- examiners & students ----------
+# Admin Examiners and Students
 
 @app.route('/admin/examiners')
 @login_required('admin')
@@ -435,7 +435,7 @@ def admin_examiners():
 @app.route('/admin/examiner/add', methods=['GET', 'POST'])
 @login_required('admin')
 def admin_add_examiner():
-    # examiner added by admin is approved directly
+    # Examiners added by the admin are approved directly
     if request.method == 'POST':
         email = request.form['email'].strip().lower()
         if User.query.filter_by(email=email).first():
@@ -465,7 +465,7 @@ def admin_approve(user_id):
 @app.route('/admin/user/<int:user_id>/toggle', methods=['POST'])
 @login_required('admin')
 def admin_toggle_active(user_id):
-    # activate / deactivate an examiner or student
+    # Activates or deactivates an examiner or student
     u = db.session.get(User, user_id)
     if u.role != 'admin':
         u.is_active = not u.is_active
@@ -484,13 +484,13 @@ def admin_students():
 @app.route('/admin/student/<int:student_id>')
 @login_required('admin')
 def admin_student_detail(student_id):
-    # complete booking history of one student
+    # Complete booking history of one student
     s = db.session.get(User, student_id)
     bookings = Booking.query.filter_by(student_id=s.id).order_by(Booking.booked_on.desc()).all()
     return render_template('admin/student_detail.html', s=s, bookings=bookings)
 
 
-# ---------- slots & bookings ----------
+# Admin Slots and Bookings
 
 @app.route('/admin/slots')
 @login_required('admin')
@@ -505,7 +505,7 @@ def admin_change_examiner(slot_id):
     if request.method == 'POST':
         new_ex = db.session.get(User, int(request.form['examiner_id']))
         slot.examiner_id = new_ex.id
-        # new examiner should also be assigned to the exam
+        # New examiner is also assigned to the exam
         if new_ex not in slot.exam.examiners:
             slot.exam.examiners.append(new_ex)
         db.session.commit()
@@ -526,7 +526,7 @@ def admin_bookings():
 @login_required('admin')
 def admin_reschedule(booking_id):
     b = db.session.get(Booking, booking_id)
-    # other slots of the same exam that still have seats
+    # Other slots of the same exam that still have free seats
     options = Slot.query.filter(Slot.exam_id == b.exam_id, Slot.id != b.slot_id,
                                 Slot.status == 'Available').all()
 
@@ -537,11 +537,11 @@ def admin_reschedule(booking_id):
             return redirect(request.url)
 
         old_slot = b.slot
-        # free the seat in old slot
+        # Frees the seat in the old slot
         old_slot.available_seats += 1
         if old_slot.status == 'Full':
             old_slot.status = 'Available'
-        # take a seat in new slot
+        # Takes a seat in the new slot
         new_slot.available_seats -= 1
         if new_slot.available_seats == 0:
             new_slot.status = 'Full'
@@ -554,7 +554,7 @@ def admin_reschedule(booking_id):
     return render_template('admin/reschedule.html', b=b, options=options)
 
 
-# ---------- search ----------
+# Admin Search
 
 @app.route('/admin/search')
 @login_required('admin')
@@ -564,7 +564,7 @@ def admin_search():
 
     if q:
         like = '%' + q + '%'
-        id_val = int(q) if q.isdigit() else -1   # if a number is typed, also match the ID
+        id_val = int(q) if q.isdigit() else -1   # A numeric search also matches IDs
 
         results['students'] = User.query.filter(
             User.role == 'student',
@@ -578,21 +578,21 @@ def admin_search():
         results['exams'] = Exam.query.filter(
             (Exam.name.ilike(like)) | (Exam.id == id_val)).all()
 
-        # bookings by booking id or by the student's name
+        # Bookings matched by booking ID or student name
         results['bookings'] = Booking.query.join(User, Booking.student_id == User.id).filter(
             (Booking.id == id_val) | (User.name.ilike(like))).all()
 
     return render_template('admin/search.html', q=q, results=results)
 
 
-# ---------- summary charts ----------
+# Admin Summary Charts
 
 @app.route('/admin/summary')
 @login_required('admin')
 def admin_summary():
-    # charts are drawn with matplotlib and saved as png in static/charts
+    # Charts are drawn with matplotlib and saved as PNG files in static/charts
     def empty_chart(title):
-        # shown when there is nothing to plot yet
+        # Shown when there is no data to plot
         plt.text(0.5, 0.5, 'No data yet', ha='center', fontsize=14)
         plt.axis('off')
         plt.title(title)
@@ -600,7 +600,7 @@ def admin_summary():
     folder = os.path.join(app.static_folder, 'charts')
     os.makedirs(folder, exist_ok=True)
 
-    # 1. booking trend - how many bookings were made on each day
+    # Chart 1: Booking trend, number of bookings made on each day
     per_day = {}
     for b in Booking.query.order_by(Booking.booked_on).all():
         day = b.booked_on.strftime('%d-%m')
@@ -608,7 +608,7 @@ def admin_summary():
     plt.figure(figsize=(6, 4))
     if per_day:
         plt.bar(list(per_day.keys()), list(per_day.values()), color='steelblue')
-        plt.gca().yaxis.get_major_locator().set_params(integer=True)   # whole numbers only
+        plt.gca().yaxis.get_major_locator().set_params(integer=True)   # Whole numbers only on the axis
         plt.title('Booking Trend')
         plt.xlabel('Date')
         plt.ylabel('Bookings')
@@ -618,7 +618,7 @@ def admin_summary():
     plt.savefig(os.path.join(folder, 'trend.png'))
     plt.clf()
 
-    # 2. examiner workload - students booked in each examiner's slots
+    # Chart 2: Examiner workload, students booked in each examiner's slots
     workload = {}
     for ex in User.query.filter_by(role='examiner').all():
         count = Booking.query.join(Slot).filter(Slot.examiner_id == ex.id,
@@ -637,7 +637,7 @@ def admin_summary():
     plt.savefig(os.path.join(folder, 'workload.png'))
     plt.clf()
 
-    # 3. examination completion - booking status split
+    # Chart 3: Examination completion, split of booking statuses
     labels = ['Booked', 'Completed', 'Cancelled']
     sizes = [Booking.query.filter_by(status=x).count() for x in labels]
     plt.figure(figsize=(5, 4))
@@ -649,13 +649,11 @@ def admin_summary():
     plt.savefig(os.path.join(folder, 'completion.png'))
     plt.close('all')
 
-    # timestamp goes in the image url so the browser doesn't show an old cached chart
+    # Timestamp in the image URL prevents the browser from showing a cached chart
     return render_template('admin/summary.html', t=int(datetime.now().timestamp()))
 
 
-# =====================================================
-#                     EXAMINER
-# =====================================================
+# Examiner Dashboard
 
 @app.route('/examiner/dashboard')
 @login_required('examiner')
@@ -663,7 +661,7 @@ def examiner_dashboard():
     me = current_user()
     my_slots = Slot.query.filter_by(examiner_id=me.id).order_by(Slot.date).all()
 
-    # bookings in my slots
+    # Bookings in this examiner's slots
     booked = Booking.query.join(Slot).filter(Slot.examiner_id == me.id,
                                              Booking.status != 'Cancelled').all()
     pending = [b for b in booked if b.evaluation is None]
@@ -671,6 +669,8 @@ def examiner_dashboard():
     return render_template('examiner/dashboard.html', exams=me.assigned_exams,
                            slots=my_slots, booked_count=len(booked), pending=pending)
 
+
+# Examiner Slots
 
 @app.route('/examiner/exam/<int:exam_id>')
 @login_required('examiner')
@@ -685,7 +685,7 @@ def examiner_exam_detail(exam_id):
 
 
 def read_slot_form(exam):
-    # reads + validates the slot form, returns (data, error)
+    # Reads and validates the slot form, returns (data, error)
     try:
         date = to_date(request.form['date'])
     except (KeyError, ValueError):
@@ -701,7 +701,7 @@ def read_slot_form(exam):
         return None, 'End time must be after start time'
     if capacity < 1:
         return None, 'Capacity should be at least 1'
-    # exam happens after the booking period is over
+    # Exams take place after the booking period ends
     if date <= exam.booking_end:
         return None, 'Slot date must be after booking end date (%s)' % exam.booking_end
     return {'date': date, 'start': start, 'end': end, 'capacity': capacity}, None
@@ -716,7 +716,7 @@ def examiner_create_slot(exam_id):
         flash('You are not assigned to this exam', 'danger')
         return redirect(url_for('examiner_dashboard'))
 
-    # only during slot creation period
+    # Slots can be created only during the slot creation period
     if not exam.slot_creation_allowed():
         flash('Slot creation is not open for this exam right now', 'warning')
         return redirect(url_for('examiner_exam_detail', exam_id=exam.id))
@@ -738,7 +738,7 @@ def examiner_create_slot(exam_id):
 
 
 def can_modify(slot):
-    # slot can change only before booking starts and when nobody has booked it
+    # Slots can change only before booking starts and only when nobody has booked them
     if slot.exam.status not in ('Draft', 'Slot Creation'):
         return False
     return len([b for b in slot.bookings if b.status != 'Cancelled']) == 0
@@ -763,7 +763,7 @@ def examiner_edit_slot(slot_id):
         slot.start_time = data['start']
         slot.end_time = data['end']
         slot.capacity = data['capacity']
-        slot.available_seats = data['capacity']   # no bookings yet so all seats are free
+        slot.available_seats = data['capacity']   # No bookings yet, so all seats are free
         db.session.commit()
         flash('Slot updated', 'success')
         return redirect(url_for('examiner_exam_detail', exam_id=slot.exam_id))
@@ -785,6 +785,8 @@ def examiner_delete_slot(slot_id):
     return redirect(url_for('examiner_exam_detail', exam_id=exam_id))
 
 
+# Examiner Booked Students and Evaluation
+
 @app.route('/examiner/slot/<int:slot_id>/students')
 @login_required('examiner')
 def examiner_slot_students(slot_id):
@@ -800,7 +802,7 @@ def examiner_slot_students(slot_id):
 @login_required('examiner')
 def examiner_evaluate(booking_id):
     b = db.session.get(Booking, booking_id)
-    # examiner can evaluate only students booked in their own slot
+    # Examiners can evaluate only students booked in their own slots
     if b is None or b.slot.examiner_id != session['user_id'] or b.status == 'Cancelled':
         flash('You cannot evaluate this student', 'danger')
         return redirect(url_for('examiner_dashboard'))
@@ -811,7 +813,7 @@ def examiner_evaluate(booking_id):
         return redirect(url_for('examiner_slot_students', slot_id=b.slot_id))
 
     ev = b.evaluation
-    # old marks (if evaluated before) to pre fill the form
+    # Previous marks, used to prefill the form when editing an evaluation
     old = {s.rubric_id: s.marks for s in ev.scores} if ev else {}
 
     if request.method == 'POST':
@@ -819,11 +821,11 @@ def examiner_evaluate(booking_id):
             ev = Evaluation(booking_id=b.id)
             db.session.add(ev)
         else:
-            ev.scores.clear()   # remove old marks and save the new ones
+            ev.scores.clear()   # Removes old marks before saving the new ones
 
         total = 0
         for r in rubrics:
-            # every criterion needs marks, a blank or missing value is an error (not 0)
+            # Every criterion needs marks, a blank or missing value is an error
             try:
                 m = float(request.form['r_%d' % r.id])
             except (KeyError, ValueError):
@@ -848,9 +850,7 @@ def examiner_evaluate(booking_id):
     return render_template('examiner/evaluate.html', b=b, rubrics=rubrics, ev=ev, old=old)
 
 
-# =====================================================
-#                     STUDENT
-# =====================================================
+# Student Dashboard
 
 @app.route('/student/dashboard')
 @login_required('student')
@@ -858,7 +858,7 @@ def student_dashboard():
     me = current_user()
     today = datetime.now().date()
 
-    # exams where booking is open right now
+    # Exams currently open for booking
     open_exams = [e for e in Exam.query.filter_by(status='Booking Open').all() if e.booking_allowed()]
     open_slots = []
     for e in open_exams:
@@ -867,17 +867,19 @@ def student_dashboard():
     my_bookings = Booking.query.filter_by(student_id=me.id).all()
     active = [b for b in my_bookings if b.status == 'Booked']
     upcoming = [b for b in active if b.slot.date >= today]
-    # results show only after admin marks the exam Completed
+    # Results are shown only after the admin marks the exam Completed
     results = [b for b in my_bookings if b.evaluation and b.exam.status == 'Completed']
 
     return render_template('student/dashboard.html', open_exams=open_exams, open_slots=open_slots,
                            active=active, upcoming=upcoming, results=results)
 
 
+# Student Exams, Search and Booking
+
 @app.route('/student/exams')
 @login_required('student')
 def student_exams():
-    # search and filter come from the url (?q=...&type=...&course=...)
+    # Search and filter values come from the URL query string
     q = request.args.get('q', '').strip()
     exam_type = request.args.get('type', '')
     course_id = request.args.get('course', '')
@@ -900,7 +902,7 @@ def student_exams():
 @login_required('student')
 def student_exam_detail(exam_id):
     exam = db.session.get(Exam, exam_id)
-    # does the student already have a booking here?
+    # Checks whether the student already has a booking for this exam
     existing = Booking.query.filter_by(student_id=session['user_id'], exam_id=exam.id,
                                        status='Booked').first()
     slots = [s for s in exam.slots if s.status in ('Available', 'Full')]
@@ -917,7 +919,7 @@ def student_book(slot_id):
         flash('Booking is not open for this exam', 'warning')
         return redirect(url_for('student_exam_detail', exam_id=exam.id))
 
-    # one booking per exam
+    # Only one booking per exam is allowed
     already = Booking.query.filter(Booking.student_id == session['user_id'],
                                    Booking.exam_id == exam.id,
                                    Booking.status != 'Cancelled').first()
@@ -925,7 +927,7 @@ def student_book(slot_id):
         flash('You already have a booking for this exam', 'danger')
         return redirect(url_for('student_exam_detail', exam_id=exam.id))
 
-    # capacity check so slot is never overbooked
+    # Capacity check prevents overbooking
     if slot.status != 'Available' or slot.available_seats <= 0:
         flash('Sorry, this slot is full', 'danger')
         return redirect(url_for('student_exam_detail', exam_id=exam.id))
@@ -933,7 +935,7 @@ def student_book(slot_id):
     booking = Booking(student_id=session['user_id'], slot_id=slot.id, exam_id=exam.id)
     slot.available_seats -= 1
     if slot.available_seats == 0:
-        slot.status = 'Full'   # slot closes automatically when full
+        slot.status = 'Full'   # Slot closes automatically when full
 
     db.session.add(booking)
     db.session.commit()
@@ -949,7 +951,7 @@ def student_cancel(booking_id):
         flash('Invalid booking', 'danger')
         return redirect(url_for('student_bookings'))
 
-    # cancel allowed only till booking deadline
+    # Cancellation is allowed only until the booking deadline
     if datetime.now().date() > b.exam.booking_end:
         flash('Booking deadline has passed, cannot cancel now', 'warning')
         return redirect(url_for('student_bookings'))
@@ -963,10 +965,12 @@ def student_cancel(booking_id):
     return redirect(url_for('student_bookings'))
 
 
+# Student History, Schedule and Results
+
 @app.route('/student/bookings')
 @login_required('student')
 def student_bookings():
-    # full history including cancelled
+    # Full history including cancelled bookings
     all_b = Booking.query.filter_by(student_id=session['user_id']) \
         .order_by(Booking.booked_on.desc()).all()
     today = datetime.now().date()
@@ -992,6 +996,8 @@ def student_result(booking_id):
         return redirect(url_for('student_bookings'))
     return render_template('student/result.html', b=b)
 
+
+# Student Profile
 
 @app.route('/student/profile', methods=['GET', 'POST'])
 @login_required('student')

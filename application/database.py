@@ -1,4 +1,5 @@
-# database object is kept in its own file so models and controllers can both import it
+# Database
+# Shared SQLAlchemy object used by models and controllers
 from flask_sqlalchemy import SQLAlchemy
 
 db = SQLAlchemy()
